@@ -37,6 +37,25 @@ exports.coreSetup = function(suite, auto) {
       unit.pass();
     });
   });
+
+  suite.test('onLoad receives a compiled template', function() {
+    var unit = this;
+    dust.onLoad = function(name, cb) {
+      var tmpl = dust.loadSource(dust.compile('Loaded: ' + name));
+      cb(null, tmpl);
+    };
+    dust.render("onLoad", {}, function(err, out) {
+      try {
+        unit.ifError(err);
+        unit.equals(out, "Loaded: onLoad");
+      } catch(err) {
+        unit.fail(err);
+        return;
+      }
+      unit.pass();
+    });  
+  })
+
   suite.test("disable cache", function() {
     var unit = this,
         template = "Version 1",
