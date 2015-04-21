@@ -80,26 +80,6 @@ exports.coreSetup = function(suite, auto) {
     });
   });
 
-  suite.test('onLoad that returns a different template name', function() {
-    var unit = this;
-    dust.cache.onLoad = null;
-    dust.onLoad = function(name, cb) {
-      dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
-      cb(null, 'foobar');
-    };
-    dust.render("onLoad", { templateName: function(chunk, context) { return context.getTemplateName(); } }, function(err, out) {
-      try {
-        unit.ifError(err);
-        unit.equals(out, "Loaded: onLoad, template name foobar");
-        unit.equals(dust.cache.onLoad, null);
-      } catch(err) {
-        unit.fail(err);
-        return;
-      }
-      unit.pass();
-    });
-  })
-
   suite.test("disable cache", function() {
     var unit = this,
         template = "Version 1",
