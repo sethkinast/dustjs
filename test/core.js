@@ -21,15 +21,16 @@ exports.coreSetup = function(suite, auto) {
     testRender(this, "{_foo}{$bar}{baz1}", {_foo: 1, $bar: 2, baz1: 3}, "123");
   });
 
-  suite.test("onLoad callback", function() {
+  suite.test("onLoad that calls callback with source", function() {
     var unit = this;
+    dust.cache.onLoad = null;
     dust.onLoad = function(name, cb) {
-      cb(null, "Loaded: " + name);
+      cb(null, 'Loaded: ' + name + ', template name {templateName}');
     };
-    dust.render("onLoad", {}, function(err, out) {
+    dust.render("onLoad", { templateName: function(chunk, context) { return context.getTemplateName(); } }, function(err, out) {
       try {
         unit.ifError(err);
-        unit.equals(out, "Loaded: onLoad");
+        unit.equals(out, "Loaded: onLoad, template name onLoad");
       } catch(err) {
         unit.fail(err);
         return;
@@ -38,22 +39,65 @@ exports.coreSetup = function(suite, auto) {
     });
   });
 
-  suite.test('onLoad receives a compiled template', function() {
+  suite.test('onLoad that returns a compiled template', function() {
     var unit = this;
+    dust.cache.onLoad = null;
     dust.onLoad = function(name, cb) {
-      var tmpl = dust.loadSource(dust.compile('Loaded: ' + name));
+      var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
       cb(null, tmpl);
     };
-    dust.render("onLoad", {}, function(err, out) {
+    dust.render("onLoad", { templateName: function(chunk, context) { return context.getTemplateName(); } }, function(err, out) {
       try {
         unit.ifError(err);
-        unit.equals(out, "Loaded: onLoad");
+        unit.equals(out, "Loaded: onLoad, template name foobar");
+        unit.equals(dust.cache.onLoad, null);
       } catch(err) {
         unit.fail(err);
         return;
       }
       unit.pass();
-    });  
+    });
+  });
+
+  suite.test('onLoad that returns a compiled template; override template name', function() {
+    var unit = this;
+    dust.cache.onLoad = null;
+    dust.onLoad = function(name, cb) {
+      var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
+      tmpl.templateName = 'override';
+      cb(null, dust.cache.foobar);
+    };
+    dust.render("onLoad", { templateName: function(chunk, context) { return context.getTemplateName(); } }, function(err, out) {
+      try {
+        unit.ifError(err);
+        unit.equals(out, "Loaded: onLoad, template name override");
+        unit.equals(dust.cache.onLoad, null);
+      } catch(err) {
+        unit.fail(err);
+        return;
+      }
+      unit.pass();
+    });
+  });
+
+  suite.test('onLoad that returns a different template name', function() {
+    var unit = this;
+    dust.cache.onLoad = null;
+    dust.onLoad = function(name, cb) {
+      dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
+      cb(null, 'foobar');
+    };
+    dust.render("onLoad", { templateName: function(chunk, context) { return context.getTemplateName(); } }, function(err, out) {
+      try {
+        unit.ifError(err);
+        unit.equals(out, "Loaded: onLoad, template name foobar");
+        unit.equals(dust.cache.onLoad, null);
+      } catch(err) {
+        unit.fail(err);
+        return;
+      }
+      unit.pass();
+    });
   })
 
   suite.test("disable cache", function() {
